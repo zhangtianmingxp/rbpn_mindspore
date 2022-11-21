@@ -15,6 +15,7 @@
         - [Evaluation Result](#evaluation-result)
     - [inference Process](#inference-process)
         - [Export MindIR](#export-mindir)
+        - [Export MindIR](#infer-on-Ascend310)
         - [Export Result](#export-result)
 - [Model Description](#model-description)
     - [Performance](#performance)
@@ -200,7 +201,18 @@ The log file is eval.log which displays the average precision.
 
 ### [Export MindIR](#contents)
 
+Since the image sizes of the test set can vary, and the input required by mindir must be fixed, you need to check the image size parameters in export.py before exporting mindir. The length and width should be one quarter of the original image size.
+
 ```text
+# check the length and width
+# the test dataset vid4/foliage (vim export.py , Correct the following)
+eg: input_array = Tensor(np.zeros([1, 3, 120, 180], np.float32))
+    neighbor_array = Tensor(np.zeros([1, 6, 3, 120, 180], np.float32))
+    flow_array = Tensor(np.zeros([1, 6, 2, 120, 180], np.float32))
+# the test dataset vid4/city (vim export.py , Correct the following)
+eg: input_array = Tensor(np.zeros([1, 3, 144, 176], np.float32))
+    neighbor_array = Tensor(np.zeros([1, 6, 3, 144, 176], np.float32))
+    flow_array = Tensor(np.zeros([1, 6, 2, 144, 176], np.float32))
 # export RBPN
 python export.py  [CKPT] [FILE_NAME] [FILE_FORMAT]
 
@@ -209,13 +221,28 @@ eg: python export.py --ckpt_path=ckpt/RBPN_best.ckpt --file_name=rbpn --file_for
 
 The pretrained parameter is required. EXPORT_FORMAT should be in ["AIR", "MINDIR"] Current batch_size can only be set to 1.
 
-### [Export Result](#contents)
+### [Infer on Ascend310](#contents)
 
-Inference result is saved in current path, you can find result like this in eval.log file.
+**Before inference, please refer to [Environment Variable Setting Guide](https://gitee.com/mindspore/models/tree/master/utils/ascend310_env_set/README.md) to set environment variables.**
+
+Before performing inference, the mindir file must be exported by `export.py`. Current batch_Size can only be set to 1.
+
+```text
+# Ascend310 inference about RBPN network
+bash run_infer_310.sh [MINDIR_PATH] [VAL_PATH] [FILE_LIST] [NEED_PREPROCESS] [DEVICE_TARGET] [DEVICE_ID]
+
+eg: bash run_infer_310.sh /home/.../rbpn_best_model.mindir  /home/.../dataset/Vid4  foliage.txt  y  CPU  0
+```
+
+The [MINDIR_PATH] and [VAL_PATH] hyperarguments above must be absolute paths and the [FILE_LIST] hyperarguments above only need to be a file name like foliage.txt, but the file must be in [VAL_PATH]. For example, you can move the file foliage.txt to the val_path /home/.../dataset/Vid4.
+
+### [Result](#contents)
+
+Inference result is saved in the path ascend310_infer/, you can find result like this in acc.log file.
 
 If you set --future_frame=True , then it is recommended to delete the first three items and the last three items in the file_list, which will make the accuracy more accurate
 
-```bash
+```text
 'avg psnr': 24.75
 ```
 
